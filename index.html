@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Character Movement</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #ddd;
+      flex-direction: column;
+    }
+    .game-container {
+      width: 800px;
+      height: 600px;
+      position: relative;
+      overflow: hidden;
+      background: url('https://i.pinimg.com/736x/1c/8b/75/1c8b7542359bb190ebfaa8fbc0548365.jpg')
+        no-repeat center center;
+      background-size: cover;
+      border: 2px solid black;
+    }
+    .character-container {
+      width: 58px;
+      height: 117px;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      overflow: hidden;
+    }
+    .character {
+      position: absolute;
+      width: 232px; /* 58px * 4 */
+      height: 466px; /* 117px * 4 */
+      image-rendering: pixelated;
+    }
+    .message {
+      font-size: 24px;
+      font-weight: bold;
+      padding: 10px;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      border-radius: 5px;
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div class="message" id="message"></div>
+  <div class="game-container">
+    <div class="character-container">
+      <img class="character" id="character" src="./killyou2.png" alt="character sprite" />
+    </div>
+  </div>
+  <script>
+    const character = document.getElementById("character");
+    const message = document.getElementById("message");
+
+    const gameContainer = document.querySelector(".game-container");
+    const gameWidth = gameContainer.clientWidth;
+    const gameHeight = gameContainer.clientHeight;
+
+    // 초기 좌표: 게임 컨테이너 중앙에서 캐릭터 크기의 절반 차감한 값
+    let posX = gameWidth / 2 - 29; // 29 = 58 / 2
+    let posY = gameHeight / 2 - 58; // 58 = 117 / 2
+    let speed = 48;
+    let frame = 0;
+    // directionY: 0: 아래, 1: 위, 2: 왼쪽, 3: 오른쪽
+    let directionY = 0;
+
+    const updateCharacter = () => {
+      // 업데이트된 좌표를 character-container에 적용
+      const container = character.parentElement;
+      container.style.left = posX + "px";
+      container.style.top = posY + "px";
+      character.style.transform = `translate(-${frame * 58}px, -${directionY * 117}px)`;
+    };
+
+    const resetCharacter = () => {
+      posX = gameWidth / 2 - 29;
+      posY = gameHeight / 2 - 58;
+      updateCharacter();
+      message.style.display = "none"; // 메시지 숨김
+    };
+
+    window.addEventListener("keydown", (e) => {
+      if (e.repeat) return;
+
+      if (e.code === "ArrowLeft") {
+        posX -= speed;
+        directionY = 2;
+      } else if (e.code === "ArrowRight") {
+        posX += speed;
+        directionY = 3;
+      } else if (e.code === "ArrowUp") {
+        posY -= speed;
+        directionY = 1;
+      } else if (e.code === "ArrowDown") {
+        posY += speed;
+        directionY = 0;
+      }
+
+      // 경계 체크: 게임 영역 내에서 캐릭터 전체가 노출되어야 함
+      if (posX < 0 || posX > gameWidth - 58 || posY < 0 || posY > gameHeight - 117) {
+        message.textContent = "죽었습니다";
+        message.style.display = "block";
+        setTimeout(resetCharacter, 1000);
+      } else {
+        frame = (frame + 1) % 4;
+      }
+      updateCharacter();
+    });
+
+    updateCharacter(); // 캐릭터 초기 위치 업데이트
+  </script>
+</body>
+</html>

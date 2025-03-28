@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pixel Character Movement</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #ddd;
+      flex-direction: column;
+    }
+    .game-container {
+      width: 1600px;
+      height: 1600px;
+      position: relative;
+      overflow: hidden;
+      background: url('https://i.pinimg.com/736x/d7/99/ae/d799ae2255d330b419bea813cc2aa53b.jpg') no-repeat center center;
+      background-size: cover;
+      border: 2px solid black;
+    }
+    .character-container {
+      position: absolute;
+      width: 55px;
+      height: 115px;
+      overflow: hidden;
+    }
+    .character {
+      position: absolute;
+      width: 232px;
+      height: 466px;
+      image-rendering: pixelated;
+    }
+    .monster-container {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      overflow: hidden;
+    }
+    .monster {
+      position: absolute;
+      width: 100px;
+      height: 400px;
+      image-rendering: pixelated;
+    }
+    .message {
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      padding: 16px 28px;
+      background: rgba(220, 20, 60, 0.85);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      z-index: 1000;
+      animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateX(-50%) scale(0.95); }
+      100% { opacity: 1; transform: translateX(-50%) scale(1); }
+    }
+    .skill-circle {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: rgba(0, 200, 255, 0.4);
+      border: 2px solid rgba(0, 200, 255, 0.8);
+      pointer-events: none;
+      display: none;
+      z-index: 900;
+    }
+    .particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background-color: rgba(173, 216, 230, 0.9);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: ice-burst 1s ease-out forwards;
+    }
+    @keyframes ice-burst {
+      0% {
+        opacity: 1;
+        transform: translate(0px, 0px) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--x), var(--y)) scale(0.5);
+      }
+    }
+    .scoreboard {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-family: sans-serif;
+      font-size: 16px;
+      z-index: 1001;
+    }
+    
+      .hp-bar-container {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 200px;
+      height: 24px;
+      border: 2px solid black;
+      background-color: #ddd;
+      z-index: 1001;
+    }
+
+      .hp-bar {
+      height: 100%;
+      width: 100%;
+      background-color: crimson;
+      transition: width 0.3s ease;
+    }
+
+    .monster-hp-bar-container {
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background-color: #444;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .monster-hp-bar {
+      width: 100%;
+      height: 100%;
+      background-color: #ff0000;
+      transition: width 0.3s ease;
+    }
+    .skill-effect {
+     position: absolute;
+     width: 180px;
+     height: auto;
+     pointer-events: none;
+     z-index: 900;
+    }
+
+    
+    .skill-icon-container {
+      position: fixed;
+      top: 40px; /* HP바 아래로 */
+      left: 10px;
+      width: 40px;
+      height: 40px;
+      z-index: 1000;
+    }
+
+    .skill-icon {
+      width: 100%;
+      height: 100%;
+      border: 2px solid black;
+      border-radius: 6px;
+    }
+
+    .skill-cooldown {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      top: 0;
+      left: 0;
+      border-radius: 6px;
+      pointer-events: none;
+      z-index: 2;
+      transition: height 0.1s linear;
+    }
+
+    .boss-hp-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 30px;
+  background-color: #333;
+  border: 3px solid #000;
+  border-radius: 15px;
+  z-index: 1002;
+  display: none;
+}
+
+.boss-hp-bar {
+  height: 100%;
+  width: 100%;
+  background-color: #ff4500;
+  transition: width 0.3s ease;
+  border-radius: 12px;
+}
+
+.boss-hp-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  text-shadow: 2px 2px 2px black;
+}
+
+.boss-container {
+  position: absolute;
+  width: 200px;   /* 한 프레임의 너비 */
+  height: 1000px;  /* 한 프레임의 높이 */
+  overflow: hidden;
+  z-index: 999;
+}
+
+.boss {
+  position: absolute;
+  width: 800px;   /* 200px * 4프레임 (가로 배열) */
+  height: 800px;  /* 한 프레임의 높이 */
+  image-rendering: pixelated;
+}
+
+
+
+    .weapon {
+  position: absolute;
+  width: 90px;
+  height: auto;
+  image-rendering: pixelated;
+  pointer-events: none;
+  transform-origin: 75% 95%;
+  z-index: 1;
+}
+
+  </style>
+</head>
+<body>
+    <div class="message" id="message">💀 죽었습니다 💀</div>
+    <div class="scoreboard" id="scoreboard">
+      Kills: <span id="killCount">0</span> | Time Left: <span id="timer">3:00</span>
+    </div>
+    <div class="game-container" id="gameContainer">
+      <!-- 캐릭터는 여기 -->
+      <div class="character-container" id="charContainer">
+        <img class="character" id="character" src="./killyou2.png" alt="character sprite" />
+      </div>
+    
+      <!-- 무기는 캐릭터 밖으로! -->
+      <img class="weapon" id="weapon" src="./kimremove.png" alt="weapon" />
+    
+    
+      <div class="monster-container" id="monster0">
+        <img class="monster" src="./gorlia.png" alt="monster" />
+      </div>
+      <div class="monster-container" id="monster1">
+        <img class="monster" src="./gorlia.png" alt="monster" />
+      </div>
+      <!-- 보스 체력바 -->
+      <div class="boss-hp-container" id="bossHpContainer" style="display: none;">
+        <div class="boss-hp-bar" id="bossHpBar"></div>
+        <div class="boss-hp-text" id="bossHpText"></div>
+      </div>
+
+      <!-- 보스 몬스터 -->
+      <div class="boss-container" id="bossContainer" style="display: none;">
+        <img class="boss" src="./boss.png" alt="boss" />
+      </div>
+    
+      <!-- ✅ 요기! skillEffect 이미지 추가 -->
+      <img id="skillEffect" src="./skill2-remove.png" class="skill-effect" style="display: none;" />
+      <img
+        id="skillEffect2"
+        src="./skill2.gif"
+        style="position: absolute; display: none; width: 300px; height: 300px;"
+        alt="Skill 2 Effect Animation"
+      />
+      <img
+        id="skillEffect3"
+        src="./skill3.gif"
+        style="position: absolute; display: none; width: 300px; height: 300px;"
+        alt="Skill 3 Effect Animation"
+      />
+
+    
+      <!-- 기존 CSS 기반 원형 이펙트는 제거하거나 유지 -->
+      <div class="skill-circle" id="skillCircle" style="display: none;"></div>
+    </div>
+  
+    <div id="gameOverUI" style="display: none; flex-direction: column; align-items: center; gap: 12px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001;">
+      <div style="display: flex; gap: 16px;">
+        <button id="restartBtn" style="padding: 10px 20px; font-size: 16px;">Start</button>
+        <button id="exitBtn" style="padding: 10px 20px; font-size: 16px;">Exit</button>
+      </div>
+    </div>
+   
+  
+    <div class="hp-bar-container">
+      <div class="hp-bar" id="hpBar"></div>
+    </div>
+    <div class="skill-icon-container">
+      <div class="skill-cooldown" id="skillCooldown"></div>
+      <img src="./icon.png" alt="skill icon" class="skill-icon" />
+      <div id="skillCooldown2" id="skillCooldown2"></div>
+      <img src="./icon2.png" alt="skill2 icon" class="skill-icon"/>
+    </div>
+    
+
+    <script>
+      const skillEffect = document.getElementById("skillEffect"); // ✅ 이미지 이펙트
+      const skillCircle = document.getElementById("skillCircle"); // (더 이상 사용 X)
+      const message = document.getElementById("message");
+      const gameOverUI = document.getElementById("gameOverUI");
+      const restartBtn = document.getElementById("restartBtn");
+      const exitBtn = document.getElementById("exitBtn");
+      const killDisplay = document.getElementById("killCount");
+      const timerDisplay = document.getElementById("timer");
+      const character = document.getElementById("character");
+      const weapon = document.getElementById("weapon");
+      const gameContainer = document.getElementById("gameContainer");
+      const gameWidth = gameContainer.clientWidth;
+      const gameHeight = gameContainer.clientHeight;
+      const skillEffect3 = document.getElementById("skillEffect3");
+      const skillCooldown3 = document.getElementById("skillCooldown3");
+      const MONSTER_COUNT = 100; // 몬스터 수 증가
+      const skillEffect2 = document.getElementById("skillEffect2"); // 새로운 스킬 이펙트 이미지 (300x300 규격)
+      const skillCooldown2 = document.getElementById("skillCooldown2");
+      const monsters = [];
+      const boss = {
+        container: document.getElementById("bossContainer"),
+        sprite: document.querySelector(".boss"),
+        hpContainer: document.getElementById("bossHpContainer"),
+        hpBar: document.getElementById("bossHpBar"),
+        hpText: document.getElementById("bossHpText"),
+        x: 800,  // 중앙 좌표
+        y: 800,
+        maxHealth: 1000,
+        currentHealth: 1000,
+        alive: false
+      };
+    
+      let posX = 368, posY = 268;
+      let speed = 48;
+      let frame = 0;
+      let directionY = 0;
+      let isInvincible = false;
+      let canUseSkill = true;
+      let canUseSkill2 = true;
+      let canUseSkill3 = true;
+      let killCount = 0;
+      let remainingTime = 180;
+      let timerInterval;
+      let bossSpawned = false;
+      let currentHP = 100, maxHP = 100;
+    
+
+    
+          // ✅ 무기 위치를 .character-container 밖에서 정확히 위치시키도록 수정된 전체 updateCharacter()
+function updateCharacter() {
+  const charContainer = document.getElementById("charContainer");
+  const weaponEl = document.getElementById("weapon");
+
+  // 안전 체크
+  if (!charContainer || !weaponEl || !gameContainer) return;
+
+  charContainer.style.left = posX + "px";
+  charContainer.style.top = posY + "px";
+  character.style.transform = `translate(${-frame * 58}px, ${-directionY * 117}px)`;
+
+  // 좌표 계산
+  const gameRect = gameContainer.getBoundingClientRect();
+  const charRect = charContainer.getBoundingClientRect();
+
+  const baseX = charRect.left - gameRect.left;
+  const baseY = charRect.top - gameRect.top;
+
+  // 무기 위치 업데이트
+  weaponEl.style.position = "absolute";
+  weaponEl.style.transformOrigin = "75% 95%";
+
+  if (directionY === 0) { // ↓ 아래
+    weaponEl.style.left = (baseX - 40) + "px";
+    weaponEl.style.top = (baseY + 7) + "px";
+    weaponEl.style.transform = "rotate(45deg)";
+  } else if (directionY === 1) { // ↑ 위
+    weaponEl.style.left = (baseX - 30) + "px";
+    weaponEl.style.top = (baseY - 30) + "px";
+    weaponEl.style.transform = "rotate(135deg)";
+  } else if (directionY === 2) { // ← 왼쪽
+    weaponEl.style.left = (baseX - 42) + "px";
+    weaponEl.style.top = (baseY + 18) + "px";
+    weaponEl.style.transform = "rotate(5deg)";
+  } else if (directionY === 3) { // → 오른쪽
+    weaponEl.style.left = (baseX - 30) + "px";
+    weaponEl.style.top = (baseY + 18) + "px";
+    weaponEl.style.transform = "scaleX(-1) rotate(-5deg)";
+  }
+}
+function updateBossHealth() {
+  const percent = (boss.currentHealth / boss.maxHealth) * 100;
+  boss.hpBar.style.width = percent + "%";
+  boss.hpText.textContent = `${Math.floor(percent)}%`;
+}
+
+// 보스 스폰 함수
+function spawnBoss() {
+  bossSpawned = true;
+  boss.alive = true;
+  boss.currentHealth = boss.maxHealth;
+  boss.container.style.display = 'block';
+  boss.hpContainer.style.display = 'block';
+  updateBossHealth();
+  
+  // 화면 가장자리를 피하는 랜덤한 위치에 스폰 (예: 최소 200, 최대 gameWidth-200 등)
+  boss.x = Math.random() * (gameWidth - 400) + 200;
+  boss.y = Math.random() * (gameHeight - 400) + 200;
+  boss.container.style.left = boss.x + "px";
+  boss.container.style.top = boss.y + "px";
+  
+  // 초기 애니메이션 프레임 0 설정
+  boss.frame = 0;
+  // boss.png는 가로 배열이므로 translateX 사용 (각 프레임의 너비: 200px)
+  boss.sprite.style.transform = `translateX(${-boss.frame * 200}px)`;
+}
+
+
+
+
+
+      
+    
+      function updateHPBar() {
+        const hpBar = document.getElementById("hpBar");
+        hpBar.style.width = (currentHP / maxHP * 100) + "%";
+      }
+    
+      function updateMonsters() {
+        monsters.forEach(mon => {
+          if (!mon.alive) return;
+          const dx = posX - mon.x;
+          const dy = posY - mon.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+    
+          if (dist < 150) {
+            mon.chasing = true;
+            mon.frame = (mon.frame + 1) % 3 + 1;
+          } else if (dist > 200) {
+            mon.chasing = false;
+            mon.frame = 0;
+          }
+    
+          mon.container.style.left = mon.x + "px";
+          mon.container.style.top = mon.y + "px";
+          mon.sprite.style.transform = `translateY(${-mon.frame * 100}px)`;
+        });
+      }
+    
+      function moveMonsters() {
+  monsters.forEach(mon => {
+    if (!mon.alive) return;
+    const dx = posX - mon.x;
+    const dy = posY - mon.y;
+
+    if (mon.chasing) {
+      mon.x += Math.sign(dx) * 20;
+      mon.y += Math.sign(dy) * 20;
+    } else {
+      mon.x += (Math.random() - 0.5) * 50;
+      mon.y += (Math.random() - 0.5) * 50;
+    }
+
+    mon.x = Math.max(0, Math.min(gameWidth - 100, mon.x));
+    mon.y = Math.max(0, Math.min(gameHeight - 100, mon.y));
+  });
+  
+  if (boss.alive) {
+    const dx = posX - boss.x;
+    const dy = posY - boss.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    boss.frame = (boss.frame + 1) % 4;
+    boss.sprite.style.transform = `translateY(${-boss.frame * 200}px)`; // 프레임 높이 조정
+    
+    // 몬스터와 동일한 방식으로 보스 애니메이션 및 이동 처리
+    if (boss.alive) {
+    const dx = posX - boss.x;
+    const dy = posY - boss.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // 플레이어가 가까우면 보스는 항상 마지막 컷(인덱스 3)을 보여준다.
+    if (dist < 300) {
+      boss.chasing = true;
+      boss.frame = 3;
+      boss.x += Math.sign(dx) * 8; // 보스 이동 속도는 느리게
+      boss.y += Math.sign(dy) * 8;
+    } else {
+      boss.chasing = false;
+      // 일반 상황에서는 프레임이 한 컷씩 번갈아 나오도록 처리.
+      boss.frame = (boss.frame + 1) % 4;
+      boss.x += (Math.random() - 0.5) * 10;
+      boss.y += (Math.random() - 0.5) * 10;
+    }
+    
+    // 보스의 위치 제한
+    boss.x = Math.max(100, Math.min(gameWidth - 300, boss.x));
+    boss.y = Math.max(100, Math.min(gameHeight - 300, boss.y));
+    boss.container.style.left = boss.x + "px";
+    boss.container.style.top = boss.y + "px";
+    
+    // 보스 애니메이션: 가로 배열이므로 각 프레임의 너비 200px 사용  
+    boss.sprite.style.transform = `translateX(${-boss.frame * 200}px)`;
+  }
+
+  updateMonsters();
+  checkCollision();
+}
+}
+
+    
+      function checkCollision() {
+        const charRect = character.parentElement.getBoundingClientRect();
+        for (let mon of monsters) {
+          if (!mon.alive) continue;
+          const monRect = mon.container.getBoundingClientRect();
+          if (
+            charRect.left < monRect.right &&
+            charRect.right > monRect.left &&
+            charRect.top < monRect.bottom &&
+            charRect.bottom > monRect.top
+          ) {
+            if (!isInvincible) {
+              currentHP -= 20;
+              updateHPBar();
+    
+              if (currentHP <= 0) {
+                message.textContent = "💀 죽었습니다 💀";
+                message.style.display = "block";
+                setTimeout(resetCharacter, 1000);
+              } else {
+                isInvincible = true;
+                setTimeout(() => { isInvincible = false; }, 2500);
+              }
+            }
+          }
+        }
+        if (boss.alive) {
+    const bossRect = boss.container.getBoundingClientRect();
+    if (
+      charRect.left < bossRect.right &&
+      charRect.right > bossRect.left &&
+      charRect.top < bossRect.bottom &&
+      charRect.bottom > bossRect.top
+    ) {
+      if (!isInvincible) {
+        currentHP -= 40;  // 보스는 더 큰 데미지
+        updateHPBar();
+        
+        if (currentHP <= 0) {
+          message.textContent = "💀 죽었습니다 💀";
+          message.style.display = "block";
+          setTimeout(resetCharacter, 1000);
+        } else {
+          isInvincible = true;
+          setTimeout(() => { isInvincible = false; }, 2500);
+        }
+      }
+    }
+      }
+    }
+    
+      function resetCharacter() {
+        const safeDistance = 300;
+        let safe = false;
+        let attempt = 0;
+    
+        while (!safe && attempt < 100) {
+          attempt++;
+          let tryX = Math.random() * (gameWidth - 58);
+          let tryY = Math.random() * (gameHeight - 117);
+    
+          safe = monsters.every(mon => {
+            const dx = tryX - mon.x;
+            const dy = tryY - mon.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            return dist >= safeDistance;
+          });
+    
+          if (safe) {
+            posX = tryX;
+            posY = tryY;
+          }
+        }
+    
+        currentHP = maxHP;
+        updateHPBar();
+        updateCharacter();
+        isInvincible = true;
+        setTimeout(() => { isInvincible = false; }, 2500);
+        message.style.display = "none";
+      }
+    
+      function createIceParticles(x, y) {
+        for (let i = 0; i < 20; i++) {
+          const p = document.createElement("div");
+          p.className = "particle";
+          p.style.left = x + "px";
+          p.style.top = y + "px";
+          const angle = Math.random() * 2 * Math.PI;
+          const radius = 40 + Math.random() * 100;
+          p.style.setProperty("--x", Math.cos(angle) * radius + "px");
+          p.style.setProperty("--y", Math.sin(angle) * radius + "px");
+          p.style.width = "12px";
+          p.style.height = "12px";
+          p.style.backgroundColor = "rgba(0, 255, 255, 0.85)";
+          p.style.boxShadow = "0 0 4px white";
+    
+          gameContainer.appendChild(p);
+          setTimeout(() => gameContainer.removeChild(p), 1500);
+        }
+      }
+      function createMonster() {
+  const container = document.createElement("div");
+  container.className = "monster-container";
+  
+  const sprite = document.createElement("img");
+  sprite.className = "monster";
+  sprite.src = "./gorlia.png";
+
+  
+  
+  const hpBarContainer = document.createElement("div");
+  hpBarContainer.className = "monster-hp-bar-container";
+  
+  const hpBar = document.createElement("div");
+  hpBar.className = "monster-hp-bar";
+  hpBarContainer.appendChild(hpBar);
+  
+  container.appendChild(sprite);
+  container.appendChild(hpBarContainer);
+  gameContainer.appendChild(container);
+
+  return {
+    container,
+    sprite,
+    hpBar,
+    x: Math.random() * (gameWidth - 100),
+    y: Math.random() * (gameHeight - 100),
+    frame: 0,
+    chasing: false,
+    alive: true,
+    maxHealth: 100,
+    currentHealth: 100
+  };
+}
+for (let i = 0; i < MONSTER_COUNT; i++) {
+  monsters.push(createMonster());
+}
+
+function updateMonsterHealthBar(mon) {
+  mon.hpBar.style.width = `${(mon.currentHealth / mon.maxHealth) * 100}%`;
+}
+    
+      const skillCooldown = document.getElementById("skillCooldown"); // ✅ 아이콘 쿨타임 마스크
+      let cooldownDuration = 10; // 1초 쿨타임
+
+      function useSkill() {
+        canUseSkill = false;
+
+        const stabX = posX + 29;
+        const stabY = posY + 58;
+        let x = stabX, y = stabY;
+
+        if (directionY === 0) { // ↓ 아래
+          x -= 90;
+          y += 40;
+          skillEffect.style.transform = "rotate(270deg)";
+        } else if (directionY === 1) { // ↑ 위
+          x -= 100;
+          y -= 100;
+          skillEffect.style.transform = "rotate(90deg)";
+        } else if (directionY === 2) { // ← 왼쪽
+          x -= 140;
+          y -= 30;
+          skillEffect.style.transform = "rotate(0deg)";
+        } else if (directionY === 3) { // → 오른쪽
+          x -= 20;
+          y -= 40;
+          skillEffect.style.transform = "rotate(180deg)";
+        }
+
+        skillEffect.style.left = x + "px";
+        skillEffect.style.top = y + "px";
+        skillEffect.style.display = "block";
+
+        const effectW = 280; // 시각적으로 길게!
+        const effectH = 280; // 높이도 여유 있게
+        if (boss.alive) {
+          const bossRect = boss.container.getBoundingClientRect();
+          const gameRect = gameContainer.getBoundingClientRect();
+          
+          // 게임 컨테이너 기준 좌표로 변환
+          const bossX = bossRect.left - gameRect.left;
+          const bossY = bossRect.top - gameRect.top;
+
+          if (
+            bossX + 75 >= x && bossX <= x + effectW &&  // 중앙 기준 충돌 체크
+            bossY + 75 >= y && bossY <= y + effectH
+          ) {
+            boss.currentHealth -= 50;  // 데미지 증가
+            updateBossHealth();
+            
+            if (boss.currentHealth <= 0) {
+              boss.alive = false;
+              boss.container.style.display = 'none';
+              boss.hpContainer.style.display = 'none';
+              killCount += 50;  // 50점 추가로 수정
+              killDisplay.textContent = killCount;
+              createIceParticles(bossX + 75, bossY + 75);
+            }
+          }
+        }
+
+
+        monsters.forEach(mon => {
+          const mx = mon.x + 50;
+          const my = mon.y + 50;
+          if (
+            mx >= x && mx <= x + effectW &&
+            my >= y && my <= y + effectH
+          ) {
+            mon.currentHealth -= 50; // 데미지 50 적용
+            updateMonsterHealthBar(mon);
+            mon.alive = false;
+            mon.container.style.display = "none";
+            createIceParticles(mx, my);
+            killCount++;
+            killDisplay.textContent = killCount;
+            
+
+            setTimeout(() => {
+              mon.x = Math.random() * (gameWidth - 100);
+              mon.y = Math.random() * (gameHeight - 100);
+              mon.frame = 0;
+              mon.chasing = false;
+              mon.alive = true;
+              mon.container.style.display = "block";
+            }, 1500);
+          }
+          if (mon.currentHealth <= 0) {
+        mon.alive = false;
+        mon.container.style.display = "none";
+        // ... 기존 처치 효과
+        
+        setTimeout(() => {
+          mon.currentHealth = mon.maxHealth;
+          updateMonsterHealthBar(mon);
+          // ... 기존 리스폰 로직
+        }, 1500);
+      }
+        });
+        if (boss.alive) {
+    const bossRect = boss.container.getBoundingClientRect();
+    const bossCenterX = bossRect.left + bossRect.width/2;
+    const bossCenterY = bossRect.top + bossRect.height/2;
+    
+    if (
+      bossCenterX >= x && bossCenterX <= x + effectW &&
+      bossCenterY >= y && bossCenterY <= y + effectH
+    ) {
+      boss.currentHealth -= 30; // 일반 몹보다 적은 데미지
+      updateBossHealth();
+      
+      if (boss.currentHealth <= 0) {
+        boss.alive = false;
+        boss.container.style.display = 'none';
+        boss.hpContainer.style.display = 'none';
+        killCount += 5; // 보스 처치 보상
+        killDisplay.textContent = killCount;
+        createIceParticles(bossCenterX, bossCenterY);
+      }
+    }
+  }
+  if (killCount >= 50 && !bossSpawned) {
+    spawnBoss();
+  }
+
+        setTimeout(() => {
+          skillEffect.style.display = "none";
+        }, 200);
+
+        // ✅ 쿨타임 시각 효과
+        skillCooldown.style.height = "100%";
+        let elapsed = 0;
+        const cooldownInterval = setInterval(() => {
+          elapsed += 100;
+          const percent = Math.max(0, 100 - (elapsed / cooldownDuration) * 100);
+          skillCooldown.style.height = percent + "%";
+
+          if (elapsed >= cooldownDuration) {
+            clearInterval(cooldownInterval);
+            skillCooldown.style.height = "0%";
+          }
+        }, 100);
+
+        // ✅ 스킬 쿨타임
+        setTimeout(() => { canUseSkill = true; }, cooldownDuration);
+      }
+      restartBtn.addEventListener("click", () => {
+  // ... 기존 코드
+  bossSpawned = false;
+  boss.alive = false;
+  boss.container.style.display = 'none';
+  boss.hpContainer.style.display = 'none';
+      });
+      function useSkill3() {
+  // 스킬 사용 불가 상태로 전환
+  canUseSkill3 = false;
+  
+  // 캐릭터 중심 좌표 (posX와 posY는 캐릭터의 좌측 상단; 캐릭터 크기가 58×117이므로 중심은 posX+29, posY+58)
+  const startCX = posX + 29;
+  const startCY = posY + 58;
+  
+  // 대시(스킬3) 이동 거리 (예: 150px)
+  const dashDistance = 150;
+  let dx = 0, dy = 0, rotation = 0;
+  
+  // directionY: 0: 아래, 1: 위, 2: 왼쪽, 3: 오른쪽  
+  // (스킬 GIF는 기본적으로 왼쪽을 향함)
+  if (directionY === 2) { // 왼쪽
+    dx = -dashDistance;
+    rotation = 0;
+  } else if (directionY === 3) { // 오른쪽
+    dx = dashDistance;
+    rotation = 180;
+  } else if (directionY === 1) { // 위쪽
+    dy = -dashDistance;
+    rotation = 90;
+  } else if (directionY === 0) { // 아래쪽
+    dy = dashDistance;
+    rotation = 270;
+  }
+  
+  // 최종 캐릭터 중심 좌표
+  const endCX = startCX + dx;
+  const endCY = startCY + dy;
+  
+  // 스킬 이펙트 표시: 효과 이미지를 캐릭터의 시작 중심에 맞추어 표시.
+  // 효과 이미지 크기가 300×300이므로, 좌상단 좌표는 (center - 150)
+  const effectX = startCX - 110;
+  const effectY = startCY - 110;
+  skillEffect3.style.left = effectX + "px";
+  skillEffect3.style.top = effectY + "px";
+  // 회전: 기본 GIF는 왼쪽을 향하므로, 바라보는 방향에 맞게 회전  
+  skillEffect3.style.transform = `rotate(${rotation}deg)`;
+  skillEffect3.style.display = "block";
+  
+  // **대시 처리:**  
+  // 캐릭터의 최종 좌측 상단 좌표를 계산합니다.
+  // (캐릭터 중심 = posX + 29, posY + 58 → 따라서 새로운 posX = endCX - 29, posY = endCY - 58)
+  posX = endCX - 29;
+  posY = endCY - 58;
+  updateCharacter();
+  
+  // **대시 경로 충돌 처리:**  
+  // 대시 경로는 시작 중심과 끝 중심을 잇는 선분의 주변을 덮는 직사각형 영역으로 정의합니다.
+  const dashWidth = 100; // 경로 폭 (예시)
+  const dashMinX = Math.min(startCX, endCX) - dashWidth / 2;
+  const dashMaxX = Math.max(startCX, endCX) + dashWidth / 2;
+  const dashMinY = Math.min(startCY, endCY) - dashWidth / 2;
+  const dashMaxY = Math.max(startCY, endCY) + dashWidth / 2;
+  
+  // 몬스터 충돌 처리: 각 몬스터 중심이 대시 영역 안에 있는지 체크
+  monsters.forEach(mon => {
+    const monCX = mon.x + 50; // 몬스터 중심 (예시, 조정 필요)
+    const monCY = mon.y + 50;
+    if (monCX >= dashMinX && monCX <= dashMaxX &&
+        monCY >= dashMinY && monCY <= dashMaxY) {
+      // 데미지 적용 (예: 100 데미지)
+      mon.currentHealth -= 100;
+      updateMonsterHealthBar(mon);
+      if (mon.currentHealth <= 0) {
+        mon.alive = false;
+        mon.container.style.display = "none";
+        killCount++;
+        killDisplay.textContent = killCount;
+        createIceParticles(monCX, monCY);
+        // 일정 시간 후 리스폰 처리
+        setTimeout(() => {
+          mon.x = Math.random() * (gameWidth - 100);
+          mon.y = Math.random() * (gameHeight - 100);
+          mon.frame = 0;
+          mon.chasing = false;
+          mon.currentHealth = mon.maxHealth;
+          mon.alive = true;
+          mon.container.style.display = "block";
+        }, 1500);
+      }
+    }
+  });
+  
+  // 보스 충돌 처리: 보스 중심이 대시 영역 내에 있으면 데미지 적용
+  if (boss.alive) {
+    const bossRect = boss.container.getBoundingClientRect();
+    const gameRect = gameContainer.getBoundingClientRect();
+    const bossCenterX = bossRect.left - gameRect.left + bossRect.width / 2;
+    const bossCenterY = bossRect.top - gameRect.top + bossRect.height / 2;
+    if (bossCenterX >= dashMinX && bossCenterX <= dashMaxX &&
+        bossCenterY >= dashMinY && bossCenterY <= dashMaxY) {
+      boss.currentHealth -= 100;
+      updateBossHealth();
+      if (boss.currentHealth <= 0) {
+        boss.alive = false;
+        boss.container.style.display = 'none';
+        boss.hpContainer.style.display = 'none';
+        killCount += 5;
+        killDisplay.textContent = killCount;
+        createIceParticles(bossCenterX, bossCenterY);
+      }
+    }
+  }
+  
+  // 스킬 이펙트는 200ms 후 숨김 처리
+  setTimeout(() => {
+    skillEffect3.style.display = "none";
+  }, 700);
+  
+  // 쿨다운 시각 효과 처리 (예: 3초 쿨다운)
+  skillCooldown3.style.height = "100%";
+  let elapsed3 = 0;
+  const cooldownInterval3 = setInterval(() => {
+    elapsed3 += 100;
+    const percent = Math.max(0, 100 - (elapsed3 / cooldownDuration) * 100);
+    skillCooldown3.style.height = percent + "%";
+    if (elapsed3 >= cooldownDuration) {
+      clearInterval(cooldownInterval3);
+      skillCooldown3.style.height = "0%";
+    }
+  }, 100);
+  
+  // 쿨다운 지속 후 스킬 사용 가능
+  setTimeout(() => { canUseSkill3 = true; }, cooldownDuration);
+}
+
+
+
+
+
+      function useSkill2() {
+          // 스킬 사용 불가 상태로 전환
+          canUseSkill2 = false;
+          
+          // 캐릭터 중심 좌표 (기존 코드 기준, posX와 posY는 캐릭터 위치 좌측 상단)
+          const centerX = posX + 29;
+          const centerY = posY + 58;
+          
+          // 스킬 효과 영역: 300x300, 캐릭터 중심을 기준으로 하므로,
+          // 좌측 상단 좌표는 중심에서 150px씩 빼면 됩니다.
+          const effectX = centerX - 150;
+          const effectY = centerY - 150;
+          
+          // 스킬 이펙트 이미지를 해당 위치에 표시
+          skillEffect2.style.left = effectX + "px";
+          skillEffect2.style.top = effectY + "px";
+          skillEffect2.style.display = "block";
+          
+          // 효과 영역의 크기 (300x300)와 중심 좌표, 반지름 150
+          const radius = 250;
+          
+          // 보스 충돌 처리 (원 형태 충돌 검증)
+          if (boss.alive) {
+            const bossRect = boss.container.getBoundingClientRect();
+            const gameRect = gameContainer.getBoundingClientRect();
+            // 보스의 중앙 좌표 (게임 컨테이너 기준으로 변환)
+            const bossCenterX = bossRect.left - gameRect.left + bossRect.width / 2;
+            const bossCenterY = bossRect.top - gameRect.top + bossRect.height / 2;
+            const dxBoss = bossCenterX - centerX;
+            const dyBoss = bossCenterY - centerY;
+            const distBoss = Math.sqrt(dxBoss * dxBoss + dyBoss * dyBoss);
+            
+            if (distBoss <= radius) {
+              // 보스에게 데미지 적용 (일반 스킬보다 약하게 설정 가능)
+              boss.currentHealth -= 50;
+              updateBossHealth();
+              
+              if (boss.currentHealth <= 0) {
+                boss.alive = false;
+                boss.container.style.display = 'none';
+                boss.hpContainer.style.display = 'none';
+                killCount += 5; // 보스 처치 보상
+                killDisplay.textContent = killCount;
+                createIceParticles(bossCenterX, bossCenterY);
+              }
+            }
+          }
+          
+          // 몬스터 충돌 처리 (각 몬스터의 중앙과 원 형태 충돌 검사)
+          monsters.forEach(mon => {
+            // 몬스터 중앙 좌표 (mill offset: 50은 예시값, 실제 몬스터 크기에 맞게 조절)
+            const monCenterX = mon.x + 50;
+            const monCenterY = mon.y + 50;
+            const dxMon = monCenterX - centerX;
+            const dyMon = monCenterY - centerY;
+            const distMon = Math.sqrt(dxMon * dxMon + dyMon * dyMon);
+            
+            if (distMon <= radius) {
+              // 몬스터에게 데미지 적용
+              mon.currentHealth -= 50;
+              updateMonsterHealthBar(mon);
+              mon.alive = false;
+              mon.container.style.display = "none";
+              createIceParticles(monCenterX, monCenterY);
+              killCount++;
+              killDisplay.textContent = killCount;
+              
+              // 일정 시간 후 몬스터 리스폰
+              setTimeout(() => {
+                mon.x = Math.random() * (gameWidth - 100);
+                mon.y = Math.random() * (gameHeight - 100);
+                mon.frame = 0;
+                mon.chasing = false;
+                mon.alive = true;
+                mon.container.style.display = "block";
+              }, 1500);
+            }
+            
+            // (추가) 체력이 0 이하인 경우 처리 (이미 위에서 처리됨)
+          });
+  
+  // 스킬 효과는 200ms 후 숨김 처리 (필요에 따라 조절)
+  setTimeout(() => {
+    skillEffect2.style.display = "none";
+  }, 1000);
+  
+  // 쿨다운 시각 효과 처리
+  skillCooldown2.style.height = "100%";
+  let elapsed2 = 0;
+  const cooldownInterval2 = setInterval(() => {
+    elapsed2 += 100;
+    const percent = Math.max(0, 100 - (elapsed2 / cooldownDuration) * 100);
+    skillCooldown2.style.height = percent + "%";
+    
+    if (elapsed2 >= cooldownDuration) {
+      clearInterval(cooldownInterval2);
+      skillCooldown2.style.height = "0%";
+    }
+  }, 100);
+  
+  // 쿨다운 후 스킬 사용 가능
+  setTimeout(() => { canUseSkill2 = true; }, cooldownDuration);
+}
+
+
+
+          
+      function handleKeydown(e) {
+        if (e.repeat) return;
+
+        let newX = posX;
+        let newY = posY;
+
+        if (e.code === "ArrowLeft") {
+          newX -= speed;
+          directionY = 2;
+        } else if (e.code === "ArrowRight") {
+          newX += speed;
+          directionY = 3;
+        } else if (e.code === "ArrowUp") {
+          newY -= speed;
+          directionY = 1;
+        } else if (e.code === "ArrowDown") {
+          newY += speed;
+          directionY = 0;
+        } else if (e.code === "KeyQ" && canUseSkill) {
+          useSkill();
+          return;
+        }
+        else if (e.code === "KeyW" && canUseSkill2) {
+          useSkill2();
+          return;
+      }
+      else if (e.code === "KeyE" && canUseSkill2) {
+          useSkill3();
+          return;
+      }
+
+        // ✅ 경계 체크 (캐릭터가 박스 밖으로 안 나가게 제한)
+        const maxX = gameWidth - 58;
+        const maxY = gameHeight - 117;
+
+        if (newX >= 0 && newX <= maxX && newY >= 0 && newY <= maxY) {
+          posX = newX;
+          posY = newY;
+          frame = (frame + 1) % 4;
+          updateCharacter();
+        }
+      }
+
+    
+      function updateTimer() {
+        const minutes = Math.floor(remainingTime / 60);
+        const seconds = remainingTime % 60;
+        timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        if (remainingTime <= 0) {
+          clearInterval(timerInterval);
+          endGame();
+        }
+        remainingTime--;
+      }
+    
+      function endGame() {
+        message.textContent = " GAME OVER ";
+        message.style.display = "block";
+        gameOverUI.style.display = "flex";
+        window.removeEventListener("keydown", handleKeydown);
+      }
+    
+      restartBtn.addEventListener("click", () => {
+        killCount = 0;
+        remainingTime = 180;
+        currentHP = maxHP;
+        killDisplay.textContent = killCount;
+        timerDisplay.textContent = "3:00";
+        updateHPBar();
+        message.style.display = "none";
+        gameOverUI.style.display = "none";
+        monsters.forEach(mon => {
+          mon.x = Math.random() * (gameWidth - 100);
+          mon.y = Math.random() * (gameHeight - 100);
+          mon.frame = 0;
+          mon.chasing = false;
+          mon.alive = true;
+          mon.container.style.display = "block";
+        });
+        updateCharacter();
+        updateMonsters();
+        window.addEventListener("keydown", handleKeydown);
+        clearInterval(timerInterval);
+        timerInterval = setInterval(updateTimer, 1000);
+      });
+    
+      exitBtn.addEventListener("click", () => {
+        gameOverUI.innerHTML = "<div style='color: white; font-size: 20px;'>게임을 종료하였습니다.</div>";
+      });
+    
+      timerInterval = setInterval(updateTimer, 1000);
+      window.addEventListener("keydown", handleKeydown);
+      setInterval(updateMonsters, 200);
+      setInterval(moveMonsters, 500);
+      updateCharacter();
+      updateMonsters();
+      updateHPBar();
+    </script>
+    
+  </body>
+  
+  
+  
+</html>
