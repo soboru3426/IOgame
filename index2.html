@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pixel Character Movement</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #ddd;
+      flex-direction: column;
+    }
+    .game-container {
+      width: 800px;
+      height: 600px;
+      position: relative;
+      overflow: hidden;
+      background: url('https://i.pinimg.com/736x/d7/99/ae/d799ae2255d330b419bea813cc2aa53b.jpg') no-repeat center center;
+      background-size: cover;
+      border: 2px solid black;
+    }
+    .character-container {
+      position: absolute;
+      width: 87px;
+      height: 90px;
+      overflow: hidden;
+    }
+    .character {
+      position: absolute;
+      width: 347px;
+      height: 360px;
+      image-rendering: pixelated;
+    }
+    .message {
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      padding: 16px 28px;
+      background: rgba(220, 20, 60, 0.85);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      z-index: 1000;
+      animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateX(-50%) scale(0.95); }
+      100% { opacity: 1; transform: translateX(-50%) scale(1); }
+    }
+    .scoreboard {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-family: sans-serif;
+      font-size: 16px;
+      z-index: 1001;
+    }
+    .hp-bar-container {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 200px;
+      height: 24px;
+      border: 2px solid black;
+      background-color: #ddd;
+      z-index: 1001;
+    }
+    .hp-bar {
+      height: 100%;
+      width: 100%;
+      background-color: crimson;
+      transition: width 0.3s ease;
+    }
+    .skill-effect {
+      position: absolute;
+      width: 180px;
+      height: auto;
+      pointer-events: none;
+      z-index: 900;
+    }
+    .skill-icon-container {
+      position: fixed;
+      top: 40px;
+      left: 10px;
+      width: 40px;
+      height: 40px;
+      z-index: 1000;
+    }
+    .skill-icon {
+      width: 100%;
+      height: 100%;
+      border: 2px solid black;
+      border-radius: 6px;
+    }
+    .skill-cooldown {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      top: 0;
+      left: 0;
+      border-radius: 6px;
+      pointer-events: none;
+      z-index: 2;
+      transition: height 0.1s linear;
+    }
+    .weapon {
+      position: absolute;
+      width: 90px;
+      height: auto;
+      image-rendering: pixelated;
+      pointer-events: none;
+      transform-origin: 75% 95%;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="message" id="message">💀 죽어시여요 💀</div>
+  <div class="scoreboard" id="scoreboard">
+    Kills: <span id="killCount">0</span> | Time Left: <span id="timer">3:00</span>
+  </div>
+  <div class="game-container" id="gameContainer">
+    <div class="character-container" id="charContainer">
+      <img class="character" id="character" src="./helpme.png" alt="character sprite" />
+    </div>
+    <img class="weapon" id="weapon" src="./kimremove.png" alt="weapon" style="display: none;"/>
+    <img id="skillEffect" src="./skill2-remove.png" class="skill-effect" style="display: none;" />
+  </div>
+
+  <div id="gameOverUI" style="display: none; flex-direction: column; align-items: center; gap: 12px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001;">
+    <div style="display: flex; gap: 16px;">
+      <button id="restartBtn" style="padding: 10px 20px; font-size: 16px;">Start</button>
+      <button id="exitBtn" style="padding: 10px 20px; font-size: 16px;">Exit</button>
+    </div>
+  </div>
+
+  <div class="hp-bar-container">
+    <div class="hp-bar" id="hpBar"></div>
+  </div>
+  <div class="skill-icon-container">
+    <div class="skill-cooldown" id="skillCooldown"></div>
+    <img src="./icon.png" alt="skill icon" class="skill-icon" />
+  </div>
+
+  <script>
+    const character = document.getElementById("character");
+    const charContainer = document.getElementById("charContainer");
+    const gameContainer = document.getElementById("gameContainer");
+    const gameWidth = gameContainer.clientWidth;
+    const gameHeight = gameContainer.clientHeight;
+    const weapon = document.getElementById("weapon");
+
+    let posX = 368, posY = 268;
+    let speed = 48;
+    let frame = 0;
+    let directionY = 3; // Default: down
+
+    function updateCharacter() {
+      charContainer.style.left = posX + "px";
+      charContainer.style.top = posY + "px";
+      character.style.transform = `translate(${-frame * 87}px, ${-directionY * 90}px)`;
+
+      const gameRect = gameContainer.getBoundingClientRect();
+      const charRect = charContainer.getBoundingClientRect();
+      const baseX = charRect.left - gameRect.left;
+      const baseY = charRect.top - gameRect.top;
+
+      weapon.style.position = "absolute";
+      weapon.style.transformOrigin = "75% 95%";
+
+      if (directionY === 3) {
+        weapon.style.left = baseX + 28 + "px";
+        weapon.style.top = baseY + 60 + "px";
+        weapon.style.transform = "rotate(45deg)";
+      } else if (directionY === 2) {
+        weapon.style.left = baseX + 26 + "px";
+        weapon.style.top = baseY + 10 + "px";
+        weapon.style.transform = "rotate(135deg)";
+      } else if (directionY === 0) {
+        weapon.style.left = baseX - 40 + "px";
+        weapon.style.top = baseY + 15 + "px";
+        weapon.style.transform = "rotate(5deg)";
+      } else if (directionY === 1) {
+        weapon.style.left = baseX + 50 + "px";
+        weapon.style.top = baseY + 20 + "px";
+        weapon.style.transform = "scaleX(-1) rotate(-5deg)";
+      }
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.repeat) return;
+      let newX = posX;
+      let newY = posY;
+
+      if (e.code === "ArrowLeft") {
+        newX -= speed;
+        directionY = 0;
+      } else if (e.code === "ArrowRight") {
+        newX += speed;
+        directionY = 1;
+      } else if (e.code === "ArrowUp") {
+        newY -= speed;
+        directionY = 2;
+      } else if (e.code === "ArrowDown") {
+        newY += speed;
+        directionY = 3;
+      }
+
+      if (newX >= 0 && newX <= gameWidth - 87 && newY >= 0 && newY <= gameHeight - 90) {
+        posX = newX;
+        posY = newY;
+        frame = (frame + 1) % 4;
+        updateCharacter();
+      }
+    });
+
+    updateCharacter();
+  </script>
+</body>
+</html>
