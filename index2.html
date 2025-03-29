@@ -229,6 +229,67 @@
   height: 800px;  /* 한 프레임의 높이 */
   image-rendering: pixelated;
 }
+/* 모달(대화창) 기본 스타일 */
+.dialogue-box {
+  position: fixed; /* 화면 고정 */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  width: 400px;
+  background-color: #f7f7f7;
+  border: 3px solid #000;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  
+  display: none; /* 기본적으로 숨김 */
+  z-index: 9999; /* 최상위에 표시 */
+  font-family: sans-serif;
+}
+
+/* 대화창 내부 구조 */
+.dialogue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffd9e8; /* 연한 분홍색 */
+  padding: 10px;
+  border-bottom: 2px solid #000;
+}
+
+.dialogue-header span {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.dialogue-header button {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.dialogue-content {
+  padding: 15px;
+  line-height: 1.4;
+  min-height: 100px;
+}
+
+.dialogue-footer {
+  text-align: right;
+  border-top: 2px solid #000;
+  padding: 10px;
+}
+
+.dialogue-footer button {
+  cursor: pointer;
+  padding: 6px 12px;
+  margin-left: 5px;
+}
+
+.dialogue-footer button:hover {
+  background-color: #eee;
+}
 
 
 
@@ -264,6 +325,20 @@
       </div>
       <div class="monster-container" id="monster1">
         <img class="monster" src="./gorlia.png" alt="monster" />
+      </div>
+      <div class="dialogue-box" id="dialogueBox">
+        <div class="dialogue-header">
+          <span>고릴라</span>
+          <button id="closeBtn">X</button>
+        </div>
+        <div class="dialogue-content">
+          <p><br />
+          우가가우가? (새로운 모험가인가?)<br />
+          • 첫 퀘스트</p>
+        </div>
+        <div class="dialogue-footer">
+          <button id="nextBtn">다음</button>
+        </div>
       </div>
       <!-- 보스 체력바 -->
       <div class="boss-hp-container" id="bossHpContainer" style="display: none;">
@@ -334,6 +409,10 @@
       const MONSTER_COUNT = 100; // 몬스터 수 증가
       const skillEffect2 = document.getElementById("skillEffect2"); // 새로운 스킬 이펙트 이미지 (300x300 규격)
       const skillCooldown2 = document.getElementById("skillCooldown2");
+      const monster1 = document.getElementById('monster1');
+      const dialogueBox = document.getElementById('dialogueBox');
+      const closeBtn = document.getElementById('closeBtn');
+      const nextBtn = document.getElementById('nextBtn');
       const monsters = [];
       const boss = {
         container: document.getElementById("bossContainer"),
@@ -364,6 +443,20 @@
     
 
     
+      monster1.addEventListener('click', () => {
+    dialogueBox.style.display = 'block';
+  });
+
+  // 닫기 버튼
+  closeBtn.addEventListener('click', () => {
+    dialogueBox.style.display = 'none';
+  });
+
+  // '다음' 버튼(추가 기능 예시)
+  nextBtn.addEventListener('click', () => {
+    // 대화 내용을 변경하거나, 다른 대화창을 띄우는 로직 추가 가능
+    alert('다음 대화로 넘어갑니다!');
+  });
           // ✅ 무기 위치를 .character-container 밖에서 정확히 위치시키도록 수정된 전체 updateCharacter()
 function updateCharacter() {
   const charContainer = document.getElementById("charContainer");
@@ -523,6 +616,8 @@ function spawnBoss() {
   updateMonsters();
   checkCollision();
 }
+updateMonsters();
+  checkCollision();
 }
 
     
@@ -822,133 +917,135 @@ function updateMonsterHealthBar(mon) {
   boss.hpContainer.style.display = 'none';
       });
       function useSkill3() {
-  // 스킬 사용 불가 상태로 전환
-  canUseSkill3 = false;
-  
-  // 캐릭터 중심 좌표 (posX와 posY는 캐릭터의 좌측 상단; 캐릭터 크기가 58×117이므로 중심은 posX+29, posY+58)
-  const startCX = posX + 29;
-  const startCY = posY + 58;
-  
-  // 대시(스킬3) 이동 거리 (예: 150px)
-  const dashDistance = 150;
-  let dx = 0, dy = 0, rotation = 0;
-  
-  // directionY: 0: 아래, 1: 위, 2: 왼쪽, 3: 오른쪽  
-  // (스킬 GIF는 기본적으로 왼쪽을 향함)
-  if (directionY === 2) { // 왼쪽
-    dx = -dashDistance;
-    rotation = 0;
-  } else if (directionY === 3) { // 오른쪽
-    dx = dashDistance;
-    rotation = 180;
-  } else if (directionY === 1) { // 위쪽
-    dy = -dashDistance;
-    rotation = 90;
-  } else if (directionY === 0) { // 아래쪽
-    dy = dashDistance;
-    rotation = 270;
-  }
-  
-  // 최종 캐릭터 중심 좌표
-  const endCX = startCX + dx;
-  const endCY = startCY + dy;
-  
-  // 스킬 이펙트 표시: 효과 이미지를 캐릭터의 시작 중심에 맞추어 표시.
-  // 효과 이미지 크기가 300×300이므로, 좌상단 좌표는 (center - 150)
-  const effectX = startCX - 110;
-  const effectY = startCY - 110;
-  skillEffect3.style.left = effectX + "px";
-  skillEffect3.style.top = effectY + "px";
-  // 회전: 기본 GIF는 왼쪽을 향하므로, 바라보는 방향에 맞게 회전  
-  skillEffect3.style.transform = `rotate(${rotation}deg)`;
-  skillEffect3.style.display = "block";
-  
-  // **대시 처리:**  
-  // 캐릭터의 최종 좌측 상단 좌표를 계산합니다.
-  // (캐릭터 중심 = posX + 29, posY + 58 → 따라서 새로운 posX = endCX - 29, posY = endCY - 58)
-  posX = endCX - 29;
-  posY = endCY - 58;
-  updateCharacter();
-  
-  // **대시 경로 충돌 처리:**  
-  // 대시 경로는 시작 중심과 끝 중심을 잇는 선분의 주변을 덮는 직사각형 영역으로 정의합니다.
-  const dashWidth = 100; // 경로 폭 (예시)
-  const dashMinX = Math.min(startCX, endCX) - dashWidth / 2;
-  const dashMaxX = Math.max(startCX, endCX) + dashWidth / 2;
-  const dashMinY = Math.min(startCY, endCY) - dashWidth / 2;
-  const dashMaxY = Math.max(startCY, endCY) + dashWidth / 2;
-  
-  // 몬스터 충돌 처리: 각 몬스터 중심이 대시 영역 안에 있는지 체크
-  monsters.forEach(mon => {
-    const monCX = mon.x + 50; // 몬스터 중심 (예시, 조정 필요)
-    const monCY = mon.y + 50;
-    if (monCX >= dashMinX && monCX <= dashMaxX &&
-        monCY >= dashMinY && monCY <= dashMaxY) {
-      // 데미지 적용 (예: 100 데미지)
-      mon.currentHealth -= 100;
-      updateMonsterHealthBar(mon);
-      if (mon.currentHealth <= 0) {
-        mon.alive = false;
-        mon.container.style.display = "none";
-        killCount++;
-        killDisplay.textContent = killCount;
-        createIceParticles(monCX, monCY);
-        // 일정 시간 후 리스폰 처리
+        // 스킬 사용 불가 상태로 전환
+        canUseSkill3 = false;
+        
+        // 캐릭터 중심 좌표 (posX와 posY는 캐릭터의 좌측 상단; 캐릭터 크기가 58×117이므로 중심은 posX+29, posY+58)
+        const startCX = posX + 29;
+        const startCY = posY + 58;
+        
+        // 대시(스킬3) 이동 거리 (예: 150px)
+        const dashDistance = 150;
+        let dx = 0, dy = 0, rotation = 0;
+        
+        // directionY: 0: 아래, 1: 위, 2: 왼쪽, 3: 오른쪽  
+        // (스킬 GIF는 기본적으로 왼쪽을 향함)
+        if (directionY === 2) { // 왼쪽
+          dx = -dashDistance;
+          rotation = 0;
+        } else if (directionY === 3) { // 오른쪽
+          dx = dashDistance;
+          rotation = 180;
+        } else if (directionY === 1) { // 위쪽
+          dy = -dashDistance;
+          rotation = 90;
+        } else if (directionY === 0) { // 아래쪽
+          dy = dashDistance;
+          rotation = 270;
+        }
+        
+        // 최종 캐릭터 중심 좌표
+        const endCX = startCX + dx;
+        const endCY = startCY + dy;
+        
+        // 스킬 이펙트 표시: 효과 이미지를 캐릭터의 시작 중심에 맞추어 표시.
+        // 효과 이미지 크기가 300×300이므로, 좌상단 좌표는 (center - 150)
+        const effectX = startCX - 110;
+        const effectY = startCY - 110;
+        skillEffect3.style.left = effectX + "px";
+        skillEffect3.style.top = effectY + "px";
+        // 회전: 기본 GIF는 왼쪽을 향하므로, 바라보는 방향에 맞게 회전  
+        skillEffect3.style.transform = `rotate(${rotation}deg)`;
+        skillEffect3.style.display = "block";
+        
+        // **대시 처리:**  
+        // 캐릭터의 최종 좌측 상단 좌표를 계산합니다.
+        // (캐릭터 중심 = posX + 29, posY + 58 → 따라서 새로운 posX = endCX - 29, posY = endCY - 58)
+        posX = endCX - 29;
+        posY = endCY - 58;
+        updateCharacter();
+        
+        // **대시 경로 충돌 처리:**  
+        // 대시 경로는 시작 중심과 끝 중심을 잇는 선분의 주변을 덮는 직사각형 영역으로 정의합니다.
+        const dashWidth = 100; // 경로 폭 (예시)
+        const dashMinX = Math.min(startCX, endCX) - dashWidth / 2;
+        const dashMaxX = Math.max(startCX, endCX) + dashWidth / 2;
+        const dashMinY = Math.min(startCY, endCY) - dashWidth / 2;
+        const dashMaxY = Math.max(startCY, endCY) + dashWidth / 2;
+        
+        // 몬스터 충돌 처리: 각 몬스터 중심이 대시 영역 안에 있는지 체크
+        monsters.forEach(mon => {
+          const monCX = mon.x + 50; // 몬스터 중심 (예시, 조정 필요)
+          const monCY = mon.y + 50;
+          if (monCX >= dashMinX && monCX <= dashMaxX &&
+              monCY >= dashMinY && monCY <= dashMaxY) {
+            // 데미지 적용 (예: 100 데미지)
+            mon.currentHealth -= 100;
+            updateMonsterHealthBar(mon);
+            if (mon.currentHealth <= 0) {
+              mon.alive = false;
+              mon.container.style.display = "none";
+              killCount++;
+              killDisplay.textContent = killCount;
+              createIceParticles(monCX, monCY);
+              // 일정 시간 후 리스폰 처리
+              setTimeout(() => {
+                mon.x = Math.random() * (gameWidth - 100);
+                mon.y = Math.random() * (gameHeight - 100);
+                mon.frame = 0;
+                mon.chasing = false;
+                mon.currentHealth = mon.maxHealth;
+                mon.alive = true;
+                mon.container.style.display = "block";
+              }, 1500);
+            }
+          }
+        });
+        
+        // 보스 충돌 처리: 보스 중심이 대시 영역 내에 있으면 데미지 적용
+        if (boss.alive) {
+          const bossRect = boss.container.getBoundingClientRect();
+          const gameRect = gameContainer.getBoundingClientRect();
+          const bossCenterX = bossRect.left - gameRect.left + bossRect.width / 2;
+          const bossCenterY = bossRect.top - gameRect.top + bossRect.height / 2;
+          if (bossCenterX >= dashMinX && bossCenterX <= dashMaxX &&
+              bossCenterY >= dashMinY && bossCenterY <= dashMaxY) {
+            boss.currentHealth -= 100;
+            updateBossHealth();
+            if (boss.currentHealth <= 0) {
+              boss.alive = false;
+              boss.container.style.display = 'none';
+              boss.hpContainer.style.display = 'none';
+              killCount += 5;
+              killDisplay.textContent = killCount;
+              createIceParticles(bossCenterX, bossCenterY);
+            }
+          }
+        }
+        
+        // 스킬 이펙트는 200ms 후 숨김 처리
         setTimeout(() => {
-          mon.x = Math.random() * (gameWidth - 100);
-          mon.y = Math.random() * (gameHeight - 100);
-          mon.frame = 0;
-          mon.chasing = false;
-          mon.currentHealth = mon.maxHealth;
-          mon.alive = true;
-          mon.container.style.display = "block";
-        }, 1500);
-      }
-    }
-  });
-  
-  // 보스 충돌 처리: 보스 중심이 대시 영역 내에 있으면 데미지 적용
-  if (boss.alive) {
-    const bossRect = boss.container.getBoundingClientRect();
-    const gameRect = gameContainer.getBoundingClientRect();
-    const bossCenterX = bossRect.left - gameRect.left + bossRect.width / 2;
-    const bossCenterY = bossRect.top - gameRect.top + bossRect.height / 2;
-    if (bossCenterX >= dashMinX && bossCenterX <= dashMaxX &&
-        bossCenterY >= dashMinY && bossCenterY <= dashMaxY) {
-      boss.currentHealth -= 100;
-      updateBossHealth();
-      if (boss.currentHealth <= 0) {
-        boss.alive = false;
-        boss.container.style.display = 'none';
-        boss.hpContainer.style.display = 'none';
-        killCount += 5;
-        killDisplay.textContent = killCount;
-        createIceParticles(bossCenterX, bossCenterY);
-      }
-    }
+          skillEffect3.style.display = "none";
+        }, 800);
+        
+        // 쿨다운 시각 효과 처리 (예: 3초 쿨다운)
+        skillCooldown3.style.height = "100%";
+        let elapsed3 = 0;
+        const cooldownInterval3 = setInterval(() => {
+          elapsed3 += 100;
+          const percent = Math.max(0, 100 - (elapsed3 / cooldownDuration) * 100);
+          skillCooldown3.style.height = percent + "%";
+          if (elapsed3 >= cooldownDuration) {
+            clearInterval(cooldownInterval3);
+            skillCooldown3.style.height = "0%";
+          }
+        }, 100);
+        if (killCount >= 50 && !bossSpawned) {
+    spawnBoss();
   }
-  
-  // 스킬 이펙트는 200ms 후 숨김 처리
-  setTimeout(() => {
-    skillEffect3.style.display = "none";
-  }, 700);
-  
-  // 쿨다운 시각 효과 처리 (예: 3초 쿨다운)
-  skillCooldown3.style.height = "100%";
-  let elapsed3 = 0;
-  const cooldownInterval3 = setInterval(() => {
-    elapsed3 += 100;
-    const percent = Math.max(0, 100 - (elapsed3 / cooldownDuration) * 100);
-    skillCooldown3.style.height = percent + "%";
-    if (elapsed3 >= cooldownDuration) {
-      clearInterval(cooldownInterval3);
-      skillCooldown3.style.height = "0%";
-    }
-  }, 100);
-  
-  // 쿨다운 지속 후 스킬 사용 가능
-  setTimeout(() => { canUseSkill3 = true; }, cooldownDuration);
-}
+        // 쿨다운 지속 후 스킬 사용 가능
+        setTimeout(() => { canUseSkill3 = true; }, cooldownDuration);
+      }
 
 
 
@@ -976,31 +1073,7 @@ function updateMonsterHealthBar(mon) {
           const radius = 250;
           
           // 보스 충돌 처리 (원 형태 충돌 검증)
-          if (boss.alive) {
-            const bossRect = boss.container.getBoundingClientRect();
-            const gameRect = gameContainer.getBoundingClientRect();
-            // 보스의 중앙 좌표 (게임 컨테이너 기준으로 변환)
-            const bossCenterX = bossRect.left - gameRect.left + bossRect.width / 2;
-            const bossCenterY = bossRect.top - gameRect.top + bossRect.height / 2;
-            const dxBoss = bossCenterX - centerX;
-            const dyBoss = bossCenterY - centerY;
-            const distBoss = Math.sqrt(dxBoss * dxBoss + dyBoss * dyBoss);
-            
-            if (distBoss <= radius) {
-              // 보스에게 데미지 적용 (일반 스킬보다 약하게 설정 가능)
-              boss.currentHealth -= 50;
-              updateBossHealth();
-              
-              if (boss.currentHealth <= 0) {
-                boss.alive = false;
-                boss.container.style.display = 'none';
-                boss.hpContainer.style.display = 'none';
-                killCount += 5; // 보스 처치 보상
-                killDisplay.textContent = killCount;
-                createIceParticles(bossCenterX, bossCenterY);
-              }
-            }
-          }
+          
           
           // 몬스터 충돌 처리 (각 몬스터의 중앙과 원 형태 충돌 검사)
           monsters.forEach(mon => {
@@ -1053,7 +1126,9 @@ function updateMonsterHealthBar(mon) {
       skillCooldown2.style.height = "0%";
     }
   }, 100);
-  
+  if (killCount >= 50 && !bossSpawned) {
+    spawnBoss();
+  }
   // 쿨다운 후 스킬 사용 가능
   setTimeout(() => { canUseSkill2 = true; }, cooldownDuration);
 }
