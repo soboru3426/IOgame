@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프로필</title>
+    <link rel="stylesheet" href="/profile/style.css">
+</head>
+<body>
+    <th:block layout:fragment="content">
+        <main>
+            <div class="profile-container">
+                <!-- 프로필 이미지 -->
+                <img th:src="@{'/images/user-images/' + ${session.user.userName} + '.jpg'}" alt="Profile Image" class="profile-image">
+                
+                <!-- 프로필 정보 -->
+                <div class="profile-info">
+                    <div class="profile-info-item">
+                        <strong>닉네임:</strong>
+                        <span th:text="${session.user.userName}"></span>
+                    </div>
+
+                    <div class="profile-info-item">
+                        <strong>레벨:</strong>
+                        <span th:text="${session.user.userLevel}"></span>
+                    </div>
+
+                    <div class="profile-info-item">
+                        <strong>아이디:</strong>
+                        <span th:text="${session.user.userId}"></span>
+                    </div>
+
+                    <div class="profile-info-item">
+                        <strong>이메일:</strong>
+                        <span th:text="${session.user.email}"></span>
+                    </div>
+                </div>
+                
+                <!-- 돌아가기 버튼 -->
+                <a href="/main" class="back-button">돌아가기</a>
+            </div>
+        </main>
+    </th:block>
+</body>
+</html>

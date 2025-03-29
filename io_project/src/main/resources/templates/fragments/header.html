@@ -1,0 +1,32 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<th:block th:fragment="header">
+<header id="header">
+    <!-- 로그인 상태에 따라 로고의 링크 설정 -->
+    <h1 class="logo">
+        <!-- 로그인 상태 확인 및 링크 설정 -->
+        <a th:if="${session.user_name != null}" th:href="@{/main}">Glory Wars</a> <!-- 로그인한 경우 -->
+        <a th:if="${session.user_name == null}" th:href="@{/index}" onclick="checkSession()">Glory Wars</a> <!-- 로그인하지 않은 경우 -->
+    </h1>
+    <nav class="header_nav">
+        <ul>
+            <li><a href="/profile">프로필</a></li>
+            <li><a th:href="@{/notices}">공지사항</a></li>
+            <li><a th:href="@{/board/free}">커뮤니티</a></li>
+            <li><a th:href="@{/ranking}">랭킹</a></li>
+        </ul>
+    </nav>
+</header>
+</th:block>
+
+<script>
+function checkSession() {
+    // 세션이 만료되었는지 확인
+    const isLoggedIn = /* 서버에서 로그인 여부 확인, 세션 값 */ false; // 예시로 세션 없음
+
+    if (!isLoggedIn) {
+        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+        window.location.href = "/index"; // 로그인 페이지로 이동
+    }
+}
+</script>
+</html>
