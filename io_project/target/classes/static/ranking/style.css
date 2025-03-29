@@ -1,0 +1,135 @@
+/* 기본 스타일 */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding-top: 60px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.logo a {
+    color: white;
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* 랭킹 페이지 스타일 */
+.ranking-container {
+    padding: 120px 500px;
+    text-align: center;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+
+/* 랭킹 타이틀 */
+.ranking-title {
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+/* 상위 4명의 카드 스타일 */
+.top-rank {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.rank-card {
+    background: white;
+    color: #333;
+    padding: 15px;
+    border-radius: 10px;
+    width: 150px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.rank-card img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+}
+
+.rank-card p {
+    margin-top: 10px;
+    font-size: 16px;
+}
+
+/* 랭킹 테이블 */
+.table {
+    padding: 0 100px;
+    margin: 0 auto;
+    width: 80%;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.table th, .table td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+/* 페이지네이션 버튼 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px;
+    margin: 5px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#prevBtn {
+    background: gray;
+    color: white;
+    border-radius: 8px;
+    margin-right: 12px;
+}
+
+#nextBtn {
+    background: #007bff;
+    color: white;
+    border-radius: 8px;
+}
+
+/* 네비게이션 바에서 '랭킹' 메뉴 숨기기 */
+#header .header_nav ul li:nth-child(4) {
+    display: none; /* '랭킹' 메뉴 숨기기 */
+}
+
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .ranking-container {
+        padding: 20px;
+    }
+
+    .top-rank {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .table {
+        width: 100%;
+    }
+
+    .login_area {
+        max-width: 100%;
+    }
+
+    .header_nav ul {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

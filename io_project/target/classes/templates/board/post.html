@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/layout}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시물 상세</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/community/post/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <th:block layout:fragment="content">
+        <div class="post-container">
+            <!-- 게시물 정보 -->
+            <div class="post-header">
+                <h1 th:text="${post.title}"></h1>
+                <p>작성자: <span th:text="${post.author}"></span></p>
+                <p>조회수: <span th:text="${post.views}"></span></p>
+                <p>작성일: <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></span></p>
+            </div>
+
+            <!-- 게시물 내용 -->
+            <div class="post-content">
+                <p th:text="${post.content}"></p>
+            </div>
+
+            <!-- 댓글 작성 폼 -->
+            <div class="comment-form">
+                <h4>댓글 작성</h4>
+                <form id="commentForm">
+                    <textarea id="content" name="content" class="form-control mb-3" rows="4" placeholder="댓글을 입력하세요." required></textarea>
+                    <input type="hidden" id="postId" th:value="${post.id}">
+                    <input type="hidden" id="boardType" th:value="${boardType}">
+                    <input type="hidden" id="isLoggedIn" th:value="${session.user_name != null}"> <!-- 로그인 여부 -->
+                    <div class="comment-btn">
+                        <button type="submit" class="btn">댓글 달기</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 댓글 목록 -->
+            <div class="comments-list">
+                <h5>댓글</h5>
+                <ul id="comment-list" class="list-unstyled">
+                    <li th:each="comment : ${post.comments}">
+                        <strong th:text="${comment.author}"></strong>: 
+                        <span th:text="${comment.content}"></span>
+                        <small></small>
+                    </li>
+                    <li th:if="${#lists.isEmpty(post.comments)}">댓글이 없습니다.</li>
+                </ul>
+                
+                <div id="pagination" class="pagination">
+			        <button class="btn" id="prevPage" disabled><</button>
+			        <span id="pageInfo"></span>
+			        <button class="btn" id="nextPage">></button>
+			    </div>
+            </div>
+        </div>
+        
+        <!-- 댓글 처리 스크립트 -->
+        <script th:inline="javascript">
+    $(document).ready(function () {
+        const commentForm = $("#commentForm");
+        const contentInput = $("#content");
+        const commentList = $("#comment-list");
+        const pagination = $("#pagination");
+        const prevPage = $("#prevPage");
+        const nextPage = $("#nextPage");
+        const pageInfo = $("#pageInfo");
+
+        let currentPage = 1; // 현재 페이지 (클라이언트는 1부터 시작)
+        const pageSize = 10; // 페이지당 댓글 수
+
+        // 댓글 목록 불러오기 함수
+        function loadComments() {
+		    const postId = $("#postId").val();
+		    const boardType = $("#boardType").val();
+		
+		    $.ajax({
+		        type: "GET",
+		        url: `/board/${boardType}/${postId}/comments?page=${currentPage - 1}&size=${pageSize}`,
+		        success: function (response) {
+		            const { comments, totalPages } = response;
+		
+		            // 댓글 목록 렌더링
+		            commentList.empty();
+		            comments.forEach(function (comment) {
+		                const formattedDate = new Date(comment.createdAt).toLocaleString("ko-KR", {
+		                    year: "numeric",
+		                    month: "2-digit",
+		                    day: "2-digit",
+		                    hour: "2-digit",
+		                    minute: "2-digit",
+		                    second: "2-digit",
+		                });
+		
+		                // 줄바꿈 처리를 위해 .replace(/\n/g, "<br>") 적용
+		                const newComment = `
+		                    <li>
+		                        <strong>${comment.author}</strong>: 
+		                        <span>${comment.content.replace(/\n/g, "<br>")}</span>
+		                        <small class="text-muted" style="margin-left: 10px;">(${formattedDate})</small>
+		                    </li>
+		                `;
+		                commentList.append(newComment); // 댓글 추가
+		            });
+		
+		            // 페이지네이션 상태 업데이트
+		            updatePagination(totalPages);
+		        },
+		        error: function (xhr) {
+		            console.error(`Error (${xhr.status}): ${xhr.responseText}`);
+		            alert("댓글을 가져오는 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.");
+		        }
+		    });
+		}
+
+
+
+
+        // 댓글 작성 함수
+        function submitComment() {
+            const content = contentInput.val().trim();
+            const postId = $("#postId").val();
+            const boardType = $("#boardType").val();
+            const isLoggedIn = $("#isLoggedIn").val();
+
+            // 입력값 검증
+            if (!content) {
+                alert("댓글 내용을 입력하세요!");
+                return;
+            }
+
+            if (!isLoggedIn || isLoggedIn === "false") {
+                alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+                window.location.href = "/index"; // 로그인 페이지로 이동
+                return;
+            }
+
+            // 댓글 저장 요청
+            $.ajax({
+                type: "POST",
+                url: `/board/${boardType}/${postId}/comment`,
+                contentType: "application/json",
+                data: JSON.stringify({ content }), // 댓글 데이터 전송
+                success: function () {
+                    contentInput.val(""); // 입력 필드 초기화
+                    currentPage = 1; // 새로운 댓글 작성 시 1페이지로 이동
+                    loadComments(); // 댓글 목록 새로고침
+                },
+                error: function (xhr) {
+                    console.error(`Error (${xhr.status}): ${xhr.responseText}`);
+                    alert("댓글 작성 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.");
+                }
+            });
+        }
+
+        // 페이지네이션 상태 업데이트 함수
+        function updatePagination(totalPages) {
+            // 페이지네이션 초기화 상태 확인
+            const correctedTotalPages = totalPages > 0 ? totalPages : 1; // 최소 1로 설정
+            pageInfo.text(`${currentPage} / ${correctedTotalPages}`);
+            prevPage.prop("disabled", currentPage === 1); // 이전 버튼 활성/비활성
+            nextPage.prop("disabled", currentPage === correctedTotalPages); // 다음 버튼 활성/비활성
+        }
+
+        // 이전 페이지 이동 이벤트
+        prevPage.on("click", function () {
+            if (currentPage > 1) {
+                currentPage--; // 페이지 감소
+                loadComments(); // 댓글 불러오기
+            }
+        });
+
+        // 다음 페이지 이동 이벤트
+        nextPage.on("click", function () {
+            currentPage++; // 페이지 증가
+            loadComments(); // 댓글 불러오기
+        });
+
+        // 댓글 작성 이벤트 (폼 제출)
+        commentForm.on("submit", function (e) {
+            e.preventDefault(); // 기본 폼 제출 방지
+            submitComment(); // 댓글 작성 호출
+        });
+
+        // 엔터 키로 댓글 작성
+        contentInput.on("keydown", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault(); // 기본 Enter 동작 방지
+                submitComment(); // 댓글 작성 호출
+            }
+        });
+
+        // 초기 댓글 로드
+        loadComments();
+    });
+</script>
+
+
+    </th:block>
+</body>
+</html>
