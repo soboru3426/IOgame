@@ -1,0 +1,81 @@
+/* 기본적인 바디 스타일 */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* 화면 전체 높이 */
+}
+
+/* 회원가입 폼 스타일 */
+form {
+    background-color: #ffffff; /* 흰색 배경 */
+    padding: 50px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px; /* 최대 너비 */
+    box-sizing: border-box;
+}
+
+/* 제목 스타일 */
+h1 {
+    text-align: center;
+    color: #222;
+    margin-bottom: 40px;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* 레이블(입력창 설명) 스타일 */
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+/* 입력창 스타일 */
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px; /* 아래쪽 마진 */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box; /* padding 포함된 크기 */
+}
+
+input:focus {
+    border-color: #a67c52;
+}
+
+/* 버튼 스타일 */
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: #a67c52;
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* 버튼 hover 효과 */
+button:hover {
+    background-color: #865439;
+}
+
+/* 오류 메시지 스타일 (비밀번호 불일치 등의 오류를 출력할 때) */
+.error {
+    color: #dc3545; /* 빨간색 */
+    font-size: 14px;
+    text-align: center;
+    margin-top: 10px;
+}
