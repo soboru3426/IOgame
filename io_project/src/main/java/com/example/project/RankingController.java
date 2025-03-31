@@ -16,20 +16,20 @@ import com.example.project.notice.NoticeService;
 public class RankingController {
 
     @Autowired
-    private UserGameDataService userGameDataService; // user_game_data 서비스 추가
-
+    private UserService userService;
+    
     @Autowired
     private NoticeService noticeService;
-
+    
     // 랭킹 페이지를 보여주는 메서드
     @GetMapping("/ranking")
     public String showRanking(@RequestParam(defaultValue = "0") int page, Model model) {
 
-        // 상위 4명의 유저 게임 데이터를 가져옵니다.
-        model.addAttribute("topRankedUsers", userGameDataService.getTopRankedUsers());
+        // 상위 4명의 유저 데이터를 가져옵니다.
+        model.addAttribute("topRankedUsers", userService.getTopRankedUsers());
 
-        // 전체 유저 게임 데이터 (페이지네이션 처리)
-        Page<UserGameData> rankedUsers = userGameDataService.getPagedRankedUsers(page);
+        // 전체 유저 데이터 (페이지네이션 처리)
+        Page<User> rankedUsers = userService.getPagedRankedUsers(page);
         model.addAttribute("rankedUsers", rankedUsers);
 
         // 페이지네이션 정보도 모델에 추가
@@ -37,19 +37,19 @@ public class RankingController {
         model.addAttribute("totalPages", rankedUsers.getTotalPages());
 
         // 템플릿 경로를 templates/ranking/ranking.html 로 지정
-        return "ranking/ranking"; // "ranking/ranking" 템플릿
+        return "ranking/ranking"; // "ranking/ranking"으로 수정
     }
-
+    
     @GetMapping("/index")
     public String indexRanking(Model model) {
-        // 상위 4명의 랭킹 유저 게임 데이터를 가져옵니다.
-        List<UserGameData> topRankedUsers = userGameDataService.getTopRankedUsers();
+        // 상위 4명 랭킹 유저 정보를 가져옵니다.
+        List<User> topRankedUsers = userService.getTopRankedUsers();
 
         // 상위 3명만 선택하여 모델에 추가
         if (topRankedUsers.size() > 3) {
-            topRankedUsers = topRankedUsers.subList(0, 3); // 첫 3명만 선택
+            topRankedUsers = topRankedUsers.subList(0, 3);  // 첫 3명만 선택
         }
-
+        
         // 공지사항 데이터를 가져옵니다.
         List<Notice> topNotices = noticeService.getTop3Notices();
 

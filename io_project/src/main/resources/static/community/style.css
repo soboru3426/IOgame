@@ -1,9 +1,11 @@
-body {
+body, html {
 	font-family: Arial, sans-serif; /* 폰트 */
+	height: 100%;
 }
 
 main {
-	margin-top: 85px;
+	flex: 1;
+	margin-top: 45px;
 	width: 100vw;
 }
 
@@ -234,5 +236,16 @@ li {
     background-color: #f9f9f9; /* 밝은 배경색 */
     transform: translateY(-3px); /* 살짝 올라가는 효과 */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
+}
+
+.footer {
+    background-color: #333; /* 배경색 */
+    color: white; /* 텍스트 색상 */
+    text-align: center; /* 텍스트 가운데 정렬 */
+    padding: 10px; /* 내부 여백 */
+    position: relative; /* 기본 위치 */
+    bottom: 0; /* 화면 아래로 설정 */
+    width: 100%; /* 화면 전체 너비 */
+    margin-top: auto; /* 콘텐츠 아래로 밀림 */
 }
 

@@ -1,5 +1,18 @@
 @charset "UTF-8";
 
+/* Body와 Main 영역 설정 */
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1; /* 남은 공간을 차지 */
+    padding: 20px; /* 내부 여백 추가 */
+}
+
 /* 헤더 스타일 */
 #header {
     display: flex;
@@ -9,11 +22,11 @@
     padding: 15px 20px;
     color: white;
     width: 100%;
-	position: fixed;
-	top: 0;
-	left: 0;
-	z-index: 1000;
-	font-family: Arial, sans-serif; /* 폰트 */	
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    font-family: Arial, sans-serif; /* 폰트 */
 }
 
 #header .logo a {
@@ -54,7 +67,11 @@
     color: white;
     text-align: center;
     padding: 15px 0;
+    width: 100%;
     margin-top: auto; /* 남은 공간을 밀어내며 하단 고정 */
+    position: relative; /* 기본 위치 */
+    bottom: 0; /* 화면 하단으로 이동 */
+    font-family: Arial, sans-serif; /* 폰트 */
 }
 
 /* 푸터 네비게이션 스타일 */
@@ -64,7 +81,7 @@
     gap: 15px; /* 항목 사이 간격 */
     padding: 0; /* 패딩 제거 */
     margin: 0; /* 마진 제거 */
-	justify-content: center;
+    justify-content: center; /* 가운데 정렬 */
 }
 
 .footer_nav ul li {
@@ -81,3 +98,4 @@
     border-radius: 5px;
     transition: background-color 0.3s ease;
 }
+
