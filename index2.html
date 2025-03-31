@@ -54,8 +54,11 @@
       0% { opacity: 0; transform: translateX(-50%) scale(0.95); }
       100% { opacity: 1; transform: translateX(-50%) scale(1); }
     }
-    .scoreboard {
+    .scoreboard, .hp-bar-container, .skill-icon-container {
       position: fixed;
+      z-index: 1001;
+    }
+    .scoreboard {
       top: 10px;
       right: 10px;
       background-color: rgba(0, 0, 0, 0.6);
@@ -64,17 +67,14 @@
       border-radius: 10px;
       font-family: sans-serif;
       font-size: 16px;
-      z-index: 1001;
     }
     .hp-bar-container {
-      position: fixed;
       top: 10px;
       left: 10px;
       width: 200px;
       height: 24px;
       border: 2px solid black;
       background-color: #ddd;
-      z-index: 1001;
     }
     .hp-bar {
       height: 100%;
@@ -82,20 +82,9 @@
       background-color: crimson;
       transition: width 0.3s ease;
     }
-    .skill-effect {
-      position: absolute;
-      width: 180px;
-      height: auto;
-      pointer-events: none;
-      z-index: 900;
-    }
     .skill-icon-container {
-      position: fixed;
-      top: 40px;
-      left: 10px;
       width: 40px;
       height: 40px;
-      z-index: 1000;
     }
     .skill-icon {
       width: 100%;
@@ -106,7 +95,7 @@
     .skill-cooldown {
       position: absolute;
       width: 100%;
-      height: 100%;
+      height: 0%;
       background-color: rgba(0, 0, 0, 0.6);
       top: 0;
       left: 0;
@@ -115,43 +104,44 @@
       z-index: 2;
       transition: height 0.1s linear;
     }
+    .skill-effect {
+      position: absolute;
+      width: 180px;
+      height: auto;
+      pointer-events: none;
+      z-index: 900;
+    }
     .weapon {
       position: absolute;
-      width: 90px;
+      width: 60px;
       height: auto;
       image-rendering: pixelated;
       pointer-events: none;
-      transform-origin: 75% 95%;
-      z-index: 1;
+      z-index: 2;
     }
   </style>
 </head>
 <body>
-  <div class="message" id="message">💀 죽어시여요 💀</div>
-  <div class="scoreboard" id="scoreboard">
-    Kills: <span id="killCount">0</span> | Time Left: <span id="timer">3:00</span>
-  </div>
+  <div class="message" id="message">💥 죽었습니다 💥</div>
+  <div class="scoreboard">Kills: <span id="killCount">0</span> | Time Left: <span id="timer">3:00</span></div>
   <div class="game-container" id="gameContainer">
     <div class="character-container" id="charContainer">
       <img class="character" id="character" src="./helpme.png" alt="character sprite" />
     </div>
-    <img class="weapon" id="weapon" src="./kimremove.png" alt="weapon" style="display: none;"/>
-    <img id="skillEffect" src="./skill2-remove.png" class="skill-effect" style="display: none;" />
+    <img class="weapon" id="weapon" src="./shootingremove.png" alt="weapon" />
+    <img id="skillEffect" src="legdayremove.gif" class="skill-effect" style="display: none;" />
+    <img id="windEffect" src="wind.png" class="skill-effect" style="display: none;" />
   </div>
-
-  <div id="gameOverUI" style="display: none; flex-direction: column; align-items: center; gap: 12px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001;">
-    <div style="display: flex; gap: 16px;">
-      <button id="restartBtn" style="padding: 10px 20px; font-size: 16px;">Start</button>
-      <button id="exitBtn" style="padding: 10px 20px; font-size: 16px;">Exit</button>
-    </div>
-  </div>
-
-  <div class="hp-bar-container">
-    <div class="hp-bar" id="hpBar"></div>
-  </div>
-  <div class="skill-icon-container">
+  <div class="hp-bar-container"><div class="hp-bar" id="hpBar"></div></div>
+  <!-- Q 스킬 아이콘 -->
+  <div class="skill-icon-container" style="top: 40px; left: 10px;">
     <div class="skill-cooldown" id="skillCooldown"></div>
-    <img src="./icon.png" alt="skill icon" class="skill-icon" />
+    <img src="./icon2.PNG" alt="Q Skill Icon" class="skill-icon" />
+  </div>
+  <!-- W 스킬 아이콘 -->
+  <div class="skill-icon-container" style="top: 90px; left: 10px;">
+    <div class="skill-cooldown" id="skillCooldownW"></div>
+    <img src="./icon3.PNG" alt="W Skill Icon" class="skill-icon" />
   </div>
 
   <script>
@@ -161,11 +151,18 @@
     const gameWidth = gameContainer.clientWidth;
     const gameHeight = gameContainer.clientHeight;
     const weapon = document.getElementById("weapon");
+    const skillEffect = document.getElementById("skillEffect");
+    const windEffect = document.getElementById("windEffect");
+    const skillCooldown = document.getElementById("skillCooldown");
+    const skillCooldownW = document.getElementById("skillCooldownW");
 
     let posX = 368, posY = 268;
     let speed = 48;
     let frame = 0;
-    let directionY = 3; // Default: down
+    let directionY = 3;
+    let skillReady = true;
+    let windSkillReady = true;
+    const cooldownDuration = 1000;
 
     function updateCharacter() {
       charContainer.style.left = posX + "px";
@@ -177,33 +174,104 @@
       const baseX = charRect.left - gameRect.left;
       const baseY = charRect.top - gameRect.top;
 
-      weapon.style.position = "absolute";
-      weapon.style.transformOrigin = "75% 95%";
-
-      if (directionY === 3) {
-        weapon.style.left = baseX + 28 + "px";
-        weapon.style.top = baseY + 60 + "px";
-        weapon.style.transform = "rotate(45deg)";
-      } else if (directionY === 2) {
-        weapon.style.left = baseX + 26 + "px";
-        weapon.style.top = baseY + 10 + "px";
-        weapon.style.transform = "rotate(135deg)";
-      } else if (directionY === 0) {
-        weapon.style.left = baseX - 40 + "px";
-        weapon.style.top = baseY + 15 + "px";
-        weapon.style.transform = "rotate(5deg)";
-      } else if (directionY === 1) {
-        weapon.style.left = baseX + 50 + "px";
+      if (directionY === 0) {
+        weapon.style.left = baseX + 10 + "px";
         weapon.style.top = baseY + 20 + "px";
-        weapon.style.transform = "scaleX(-1) rotate(-5deg)";
+        weapon.style.transform = "rotate(-45deg)";
+      } else if (directionY === 1) {
+        weapon.style.left = baseX + 80 + "px";
+        weapon.style.top = baseY + 35 + "px";
+        weapon.style.transform = "rotate(135deg) scaleX(-1)";
+      } else if (directionY === 2) {
+        weapon.style.left = baseX + 15 + "px";
+        weapon.style.top = baseY - 50 + "px";
+        weapon.style.transform = "rotate(0deg)";
+      } else if (directionY === 3) {
+        weapon.style.left = baseX + 15 + "px";
+        weapon.style.top = baseY + 80 + "px";
+        weapon.style.transform = "rotate(180deg)";
       }
+    }
+
+    function useSkill() {
+      if (!skillReady) return;
+      skillReady = false;
+      const charRect = charContainer.getBoundingClientRect();
+      const gameRect = gameContainer.getBoundingClientRect();
+      const offsetX = charRect.left - gameRect.left;
+      const offsetY = charRect.top - gameRect.top;
+      let skillX = offsetX, skillY = offsetY;
+
+      if (directionY === 0) {
+        skillX -= 120; skillY -= 30;
+        skillEffect.style.transform = "rotate(0deg)";
+      } else if (directionY === 1) {
+        skillX += 20; skillY -= 40;
+        skillEffect.style.transform = "rotate(180deg)";
+      } else if (directionY === 2) {
+        skillX -= 48; skillY -= 120;
+        skillEffect.style.transform = "rotate(90deg)";
+      } else if (directionY === 3) {
+        skillX -= 50; skillY += 30;
+        skillEffect.style.transform = "rotate(270deg)";
+      }
+      skillEffect.style.left = skillX + "px";
+      skillEffect.style.top = skillY + "px";
+      skillEffect.style.display = "block";
+      setTimeout(() => { skillEffect.style.display = "none"; }, 500);
+      startCooldown(skillCooldown, () => { skillReady = true; });
+    }
+
+    function useWindSkill() {
+      if (!windSkillReady) return;
+      windSkillReady = false;
+      const charRect = charContainer.getBoundingClientRect();
+      const gameRect = gameContainer.getBoundingClientRect();
+      const offsetX = charRect.left - gameRect.left;
+      const offsetY = charRect.top - gameRect.top;
+      let skillX = offsetX, skillY = offsetY;
+
+      if (directionY === 0) {
+        skillX -= 100; skillY -= 20;
+        windEffect.style.transform = "rotate(0deg)";
+      } else if (directionY === 1) {
+        skillX += 30; skillY -= 30;
+        windEffect.style.transform = "rotate(180deg)";
+      } else if (directionY === 2) {
+        skillX -= 30; skillY -= 110;
+        windEffect.style.transform = "rotate(90deg)";
+      } else if (directionY === 3) {
+        skillX -= 40; skillY += 40;
+        windEffect.style.transform = "rotate(270deg)";
+      }
+      windEffect.style.left = skillX + "px";
+      windEffect.style.top = skillY + "px";
+      windEffect.style.display = "block";
+      setTimeout(() => { windEffect.style.display = "none"; }, 500);
+      startCooldown(skillCooldownW, () => { windSkillReady = true; });
+    }
+
+    function startCooldown(cooldownElement, onComplete) {
+      cooldownElement.style.height = "100%";
+      let remaining = 100;
+      const interval = setInterval(() => {
+        remaining -= 2;
+        cooldownElement.style.height = `${remaining}%`;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          cooldownElement.style.height = "0%";
+          onComplete();
+        }
+      }, cooldownDuration / 50);
     }
 
     window.addEventListener("keydown", (e) => {
       if (e.repeat) return;
+      if (e.code === "KeyQ") return useSkill();
+      if (e.code === "KeyW") return useWindSkill();
+
       let newX = posX;
       let newY = posY;
-
       if (e.code === "ArrowLeft") {
         newX -= speed;
         directionY = 0;
